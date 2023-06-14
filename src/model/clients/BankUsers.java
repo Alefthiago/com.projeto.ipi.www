@@ -1,6 +1,8 @@
 package model.clients;
 
+import java.util.ArrayList;
 import java.util.List;
+
 
 import connMySQL.ConnBD;
 import dao.AccountDAO;
@@ -19,7 +21,8 @@ public class BankUsers {
         this.cpf = cpf;
         this.fullName = fullName;
         this.pass = pass;
-        this.accounts = loadAccounts();
+        this.accounts = new ArrayList<>();
+        loadAccounts();
     }
 
     public String getCpf() {
@@ -50,11 +53,6 @@ public class BankUsers {
         return this.accounts;
     }
 
-    public Boolean verifyAccounts()
-    {
-      return null;       
-    }
-
     @Override
     public String toString() {
         return "{" +
@@ -65,13 +63,18 @@ public class BankUsers {
                 "}";
     }
 
-    public List<BankAccounts> loadAccounts(){
+    public void loadAccounts(){
         AccountDAO accountList = new AccountDAO(new ConnBD());
-        return accountList.recoverAccounts(this.cpf);
+        this.accounts = accountList.recoverAccounts(this.cpf);
     }
 
     public void addAccount(BankAccounts ac) {
         AccountDAO account = new AccountDAO(new ConnBD());
         account.addAccount(ac, this.cpf);
+    }
+
+    public void removeAccount(BankAccounts ac, BankUsers user){
+        AccountDAO account = new AccountDAO(new ConnBD());
+        account.removeAccount(ac, user);
     }
 }

@@ -93,7 +93,6 @@ public class UsersDAO {
             statement.setString(1, cpf);
             statement.setString(2, pass);
             resultSet = statement.executeQuery();
-
             if (resultSet.next()) {
                 String resultCpf = resultSet.getString("CLI_CPF");
                 String resultFullName = resultSet.getString("CLI_FULLNAME");

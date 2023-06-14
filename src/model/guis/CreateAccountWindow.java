@@ -26,14 +26,14 @@ public class CreateAccountWindow extends JFrame {
 
         JLabel label = new JLabel("Selecione o tipo de conta:");
         label.setBounds(120, 20, 200, 30);
-        
+
         JButton SavingsButton = new JButton("Poupança");
         SavingsButton.setBounds(120, 60, 150, 30);
         SavingsButton.addActionListener(this::addAccountSavings);
-        
+
         JButton checkingButton = new JButton("Corrente");
         checkingButton.setBounds(120, 100, 150, 30);
-        checkingButton.addActionListener(this::back);
+        checkingButton.addActionListener(this::addAccountChecking);
 
         JButton backButton = new JButton("Voltar");
         backButton.setBounds(120, 140, 150, 30);
@@ -59,17 +59,19 @@ public class CreateAccountWindow extends JFrame {
     }
 
     public void addAccountSavings(ActionEvent e) {
-        BankSavingsAccount newAccount = new BankSavingsAccount(this.user.getCpf());
+        BankSavingsAccount newAccount = new BankSavingsAccount(this.user.getCpf(), "poupança");
         this.user.addAccount(newAccount);
         this.user.loadAccounts();
+        System.out.println(this.user.getAccounts());
         new AccountWindow(this.user);
         dispose();
     }
 
     public void addAccountChecking(ActionEvent e) {
-        BankCheckingAccount newAccount = new BankCheckingAccount(this.user.getCpf());
+        BankCheckingAccount newAccount = new BankCheckingAccount(this.user.getCpf(), "corrente");
         this.user.addAccount(newAccount);
         this.user.loadAccounts();
+        System.out.println(this.user.getAccounts());
         new AccountWindow(this.user);
         dispose();
     }
