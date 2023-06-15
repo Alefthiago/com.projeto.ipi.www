@@ -1,0 +1,22 @@
+INSERT INTO BK_CLIENTS (CLI_CPF, CLI_FULLNAME, CLI_PASSWORD)
+VALUES
+    ('12345678901', 'João da Silva', '123'),
+    ('98765432109', 'Maria Souza', '123'),
+    ('24681357903', 'Carlos Santos', '123'),
+    ('13579246802', 'Ana Oliveira', '123'),
+    ('98765432103', 'Pedro Lima', '123'),
+    ('15975324680', 'Larissa Pereira', '123'),
+    ('98765432102', 'Rafael Fernandes', '123'),
+    ('98765432101', 'Fernanda Costa', '123'),
+    ('74185296300', 'Lucas Almeida', '123'),
+    ('98765432100', 'Amanda Gonçalves', '123'),
+    ('36925814700', 'Gustavo Rodrigues', '123'),
+    ('98765432108', 'Juliana Teixeira', '123'),
+    ('25814736900', 'Ricardo Cardoso', '123'),
+    ('98765432107', 'Carolina Nunes', '123'),
+    ('85296374100', 'Roberto Castro', '123'),
+    ('98765432106', 'Renata Pereira', '123'),
+    ('74185296301', 'Leandro Alves', '123'),
+    ('98765432105', 'Tatiana Santos', '123'),
+    ('65498732100', 'Isabella Lima', '123'),
+    ('98765432104', 'Laura Mendes', '123');
