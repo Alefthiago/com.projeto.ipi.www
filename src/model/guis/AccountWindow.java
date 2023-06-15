@@ -1,14 +1,22 @@
 package model.guis;
+
+import java.awt.event.ActionEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.awt.event.ActionEvent;
+
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
+import connMySQL.ConnBD;
+import dao.AccountDAO;
 import model.bankAccounts.BankAccounts;
 import model.clients.BankUsers;
+import model.customException.AccountHasBalanceE;
+import model.customException.AccountWithBalanceE;
+import model.customException.InvalidValueE;
+import model.customException.SameAccountTransferE;
 
 public class AccountWindow extends JFrame {
 
@@ -17,6 +25,7 @@ public class AccountWindow extends JFrame {
     JLabel title;
     JLabel userName;
     JLabel userCpf;
+    JLabel totalBalanceLabel;
 
     public AccountWindow(BankUsers user) {
         this.user = user;
@@ -51,7 +60,6 @@ public class AccountWindow extends JFrame {
         }
 
         int labelX = 100;
-        System.out.println(this.user.getAccounts());
         for (BankAccounts account : this.user.getAccounts()) {
             String formattedBalance = formatCurrency(account.getBalance());
 
@@ -81,12 +89,22 @@ public class AccountWindow extends JFrame {
             add(removeAccountButton);
 
             labelX += 400;
+
+            JButton totalBalanceButton = new JButton("Mostrar total dos saldos");
+            totalBalanceButton.setBounds(380, 350, 200, 30);
+            totalBalanceButton.addActionListener(this::showTotalBalance);
+            add(totalBalanceButton);
         }
 
         JButton logoutButton = new JButton("Sair");
         logoutButton.setBounds(20, 20, 100, 30);
         logoutButton.addActionListener(this::logout);
         add(logoutButton);
+
+        JButton removeUserButton = new JButton("Excluir conta");
+        removeUserButton.setBounds(20, 400, 150, 30);
+        removeUserButton.addActionListener(this::removeUser);
+        add(removeUserButton);
 
         setVisible(true);
         add(title);
@@ -98,31 +116,65 @@ public class AccountWindow extends JFrame {
         new CreateAccountWindow(this.user);
     }
 
-    
     public void removeAccount(BankAccounts account) {
-        int option = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja remover essa conta?", "Confirmação", JOptionPane.YES_NO_OPTION);
-        if (option == JOptionPane.YES_OPTION) {
-            this.user.removeAccount(account, this.user);
-            this.user.loadAccounts();
-            dispose();
-            new AccountWindow(this.user);
+        try {
+            if (account.getBalance().compareTo(BigDecimal.ZERO) > 0) {
+                throw new AccountWithBalanceE();
+            } else {
+                int option = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja remover essa conta?",
+                        "Confirmação",
+                        JOptionPane.YES_NO_OPTION);
+                if (option == JOptionPane.YES_OPTION) {
+                    this.user.removeAccount(account);
+                    this.user.loadAccounts();
+                    dispose();
+                    new AccountWindow(this.user);
+                }
+            }
+        } catch (AccountWithBalanceE exception) {
+            exception.alert();
         }
     }
-    
+
+    public void removeUser(ActionEvent event) {
+        AccountDAO DAO = new AccountDAO(new ConnBD());
+        boolean hasBalance = DAO.checkAccountBalances(this.user.getCpf());
+
+        try {
+            if (hasBalance) {
+                throw new AccountHasBalanceE();
+            } else {
+                int option = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja excluir sua conta?",
+                        "Confirmação",
+                        JOptionPane.YES_NO_OPTION);
+                if (option == JOptionPane.YES_OPTION) {
+                    DAO.removeUser(this.user.getCpf());
+                    logout(event);
+                }
+            }
+
+        } catch (AccountHasBalanceE exception) {
+            exception.alert();
+        }
+    }
+
     public void performDeposit(BankAccounts account) {
         String amountString = JOptionPane.showInputDialog(this, "Digite o valor do depósito:");
         if (amountString != null) {
             try {
                 BigDecimal amount = new BigDecimal(amountString);
                 if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                    JOptionPane.showMessageDialog(this, "Valor inválido!", "Erro", JOptionPane.ERROR_MESSAGE);
+                    throw new InvalidValueE();
                 } else {
                     account.toDeposit(amount);
+                    this.user.loadAccounts();
                     dispose();
                     new AccountWindow(this.user);
                 }
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException exception) {
                 JOptionPane.showMessageDialog(this, "Valor inválido!", "Erro", JOptionPane.ERROR_MESSAGE);
+            } catch (InvalidValueE exception) {
+                exception.alert();
             }
         }
     }
@@ -133,23 +185,65 @@ public class AccountWindow extends JFrame {
             try {
                 BigDecimal amount = new BigDecimal(amountString);
                 if (amount.compareTo(BigDecimal.ZERO) <= 0 || amount.compareTo(account.getBalance()) > 0) {
-                    JOptionPane.showMessageDialog(this, "Valor inválido ou saldo insuficiente!", "Erro", JOptionPane.ERROR_MESSAGE);
+                    throw new InvalidValueE();
                 } else {
                     account.toWithdraw(amount);
+                    this.user.loadAccounts();
                     dispose();
                     new AccountWindow(this.user);
                 }
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException exception) {
                 JOptionPane.showMessageDialog(this, "Valor inválido!", "Erro", JOptionPane.ERROR_MESSAGE);
+            } catch (InvalidValueE exception) {
+                exception.alert();
             }
         }
     }
 
     public void performTransfer(BankAccounts account) {
-
+        String accountNumberString = JOptionPane.showInputDialog(this, "Digite o número da conta de destino:");
+        if (accountNumberString != null) {
+            try {
+                int accountNumber = Integer.parseInt(accountNumberString);
+                AccountDAO DAO = new AccountDAO(new ConnBD());
+                if (DAO.findAccountByNumber(accountNumber)) {
+                    if (account.getNumber() == accountNumber) {
+                        throw new SameAccountTransferE();
+                    } else {
+                        String amountString = JOptionPane.showInputDialog(this, "Digite o valor da transferência:");
+                        if (amountString != null) {
+                            try {
+                                BigDecimal amount = new BigDecimal(amountString);
+                                if (amount.compareTo(BigDecimal.ZERO) <= 0
+                                        || amount.compareTo(account.getBalance()) > 0) {
+                                    throw new InvalidValueE();
+                                } else {
+                                    account.toTransfer(amount, accountNumber);
+                                    this.user.loadAccounts();
+                                    dispose();
+                                    new AccountWindow(this.user);
+                                }
+                            } catch (NumberFormatException exception) {
+                                JOptionPane.showMessageDialog(this, "Valor inválido!", "Erro",
+                                        JOptionPane.ERROR_MESSAGE);
+                            } catch (InvalidValueE exception) {
+                                exception.alert();
+                            }
+                        }
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "A conta de destino não foi encontrada!",
+                            "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (NumberFormatException exception) {
+                JOptionPane.showMessageDialog(this, "Número de conta inválido!", "Erro", JOptionPane.ERROR_MESSAGE);
+            } catch (SameAccountTransferE exception) {
+                exception.alert();
+            }
+        }
     }
 
-    public void logout(ActionEvent e) {
+    public void logout(ActionEvent event) {
         dispose();
         this.user = null;
         new MainWindow();
@@ -157,5 +251,11 @@ public class AccountWindow extends JFrame {
 
     private String formatCurrency(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP).toString();
+
     }
+
+    public void showTotalBalance(ActionEvent event) {
+        JOptionPane.showMessageDialog(this, "Saldo de " + user.totalBalance());
+    }
+
 }

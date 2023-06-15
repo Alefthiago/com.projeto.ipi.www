@@ -9,7 +9,6 @@ import connMySQL.ConnBD;
 import dao.AccountDAO;
 
 public class BankAccounts {
-    // atributos
     private Integer number;
     private String type;
     private String cpfOwner;
@@ -26,7 +25,6 @@ public class BankAccounts {
         this.type = type;
     }
 
-    // getters
     public Integer getNumber() {
         return this.number;
     }
@@ -51,7 +49,6 @@ public class BankAccounts {
         return this.status;
     }
 
-    // setters
     public void setNumber(int number) {
         this.number = number;
     }
@@ -75,9 +72,9 @@ public class BankAccounts {
     public void setStatus(int status) {
         this.status = status;
     }
-    // métodos
 
-    public void setAccountDetails(int number, String type, String cpfOwner, BigDecimal balance, LocalDate openingDate, int status) {
+    public void setAccountDetails(int number, String type, String cpfOwner, BigDecimal balance, LocalDate openingDate,
+            int status) {
         setNumber(number);
         setType(type);
         setOwner(cpfOwner);
@@ -102,15 +99,10 @@ public class BankAccounts {
         if (this.status != 1) {
             return false;
         }
-        if (value.compareTo(BigDecimal.ZERO) <= 0) {
+        AccountDAO DAO = new AccountDAO(new ConnBD());
+        if (!DAO.performDeposit(this.number, value)) {
             return false;
         }
-
-        AccountDAO deposit = new AccountDAO(new ConnBD());
-        if (!deposit.performDeposit(this.number, value.add(this.balance))) {
-            return false;
-        }
-        this.balance = this.balance.add(value);
         return true;
     }
 
@@ -118,16 +110,17 @@ public class BankAccounts {
         if (this.status != 1) {
             return false;
         }
-        if (value.compareTo(BigDecimal.ZERO) <= 0 || value.compareTo(this.balance) > 0) {
-            return false;
-        }
-
         AccountDAO withdraw = new AccountDAO(new ConnBD());
-        if (!withdraw.performWithdraw(this.number, this.balance.subtract(value))) {
+        if (!withdraw.performWithdraw(this.number, value)) {
             return false;
         }
-        this.balance = this.balance.subtract(value);
         return true;
+    }
+
+    public Boolean toTransfer(BigDecimal value, int destinyNumber) {
+        AccountDAO DAO = new AccountDAO(new ConnBD());
+        DAO.performTransfer(value, destinyNumber, this.getNumber());
+        return null;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package model.clients;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +16,10 @@ public class BankUsers {
     private String fullName;
     private String pass;
     private List<BankAccounts> accounts;
+
+    public BankUsers (String cpf) {
+        this.cpf = cpf;
+    }
 
     public BankUsers(String cpf, String fullName, String pass) {
         
@@ -63,6 +68,14 @@ public class BankUsers {
                 "}";
     }
 
+    public void setAllAttributes(String cpf, String fullName) {
+        this.cpf = cpf;
+        this.fullName = fullName;
+        this.pass = null;
+        this.accounts = new ArrayList<>();
+        loadAccounts();
+    }
+
     public void loadAccounts(){
         AccountDAO accountList = new AccountDAO(new ConnBD());
         this.accounts = accountList.recoverAccounts(this.cpf);
@@ -73,8 +86,17 @@ public class BankUsers {
         account.addAccount(ac, this.cpf);
     }
 
-    public void removeAccount(BankAccounts ac, BankUsers user){
+    public void removeAccount(BankAccounts ac){
         AccountDAO account = new AccountDAO(new ConnBD());
-        account.removeAccount(ac, user);
+        account.removeAccount(ac, this);
+    }
+    
+    public BigDecimal totalBalance() {
+        BigDecimal total = BigDecimal.ZERO;
+        List<BankAccounts> accounts = this.getAccounts();
+        for (BankAccounts account : accounts) {
+            total = total.add(account.getBalance());
+        }
+        return total;
     }
 }

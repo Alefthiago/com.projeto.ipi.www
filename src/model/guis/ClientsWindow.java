@@ -1,4 +1,5 @@
 package model.guis;
+
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -12,9 +13,16 @@ import javax.swing.event.DocumentListener;
 
 import connMySQL.ConnBD;
 import dao.ClientsListDAO;
+import dao.UsersDAO;
+import model.clients.BankUsers;
+import model.bankAccounts.BankAccounts;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.List;
 
@@ -24,6 +32,8 @@ public class ClientsWindow extends JFrame {
     private DefaultListModel<String> model;
     private JTextField searchField;
     private JButton backButton;
+    private JLabel userDataLabel;
+    private JLabel accountDataLabel;
 
     public ClientsWindow() {
         setTitle("Banco Jobs");
@@ -43,8 +53,9 @@ public class ClientsWindow extends JFrame {
 
         clientList = new JList<>(model);
         clientList.addListSelectionListener(e -> {
-            String value = clientList.getSelectedValue().replaceAll("\\D", "");
-            System.out.println(value);
+            if (!e.getValueIsAdjusting()) {
+                handleSelection(clientList.getSelectedValue());
+            }
         });
 
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -53,8 +64,20 @@ public class ClientsWindow extends JFrame {
         JScrollPane scrollPane = new JScrollPane(panel);
         getContentPane().add(scrollPane, BorderLayout.CENTER);
 
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.anchor = GridBagConstraints.CENTER;
+        constraints.insets = new Insets(10, 10, 10, 10);
+
+        JLabel titleLabel = new JLabel("Informações do Cliente");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.gridwidth = 2;
+        mainPanel.add(titleLabel, constraints);
+
         JLabel searchLabel = new JLabel("Número de CPF:");
-        searchField = new JTextField(10);
+        searchField = new JTextField(9);
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent event) {
@@ -72,19 +95,35 @@ public class ClientsWindow extends JFrame {
             }
         });
 
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.add(searchLabel);
-        searchPanel.add(searchField);
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        constraints.gridwidth = 1;
+        mainPanel.add(searchLabel, constraints);
 
-        getContentPane().add(searchPanel, BorderLayout.NORTH);
+        constraints.gridx = 1;
+        mainPanel.add(searchField, constraints);
 
         backButton = new JButton("Voltar");
         backButton.addActionListener(this::backWindow);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        buttonPanel.add(backButton);
+        constraints.gridx = 0;
+        constraints.gridy = 2;
+        constraints.gridwidth = 2;
+        mainPanel.add(backButton, constraints);
 
-        getContentPane().add(buttonPanel, BorderLayout.SOUTH);
+        userDataLabel = new JLabel();
+        constraints.gridx = 0;
+        constraints.gridy = 3;
+        constraints.gridwidth = 2;
+        mainPanel.add(userDataLabel, constraints);
+
+        accountDataLabel = new JLabel();
+        constraints.gridx = 0;
+        constraints.gridy = 4;
+        constraints.gridwidth = 2;
+        mainPanel.add(accountDataLabel, constraints);
+
+        getContentPane().add(mainPanel, BorderLayout.EAST);
 
         setVisible(true);
     }
@@ -111,8 +150,42 @@ public class ClientsWindow extends JFrame {
     }
 
     private String extractCPF(String item) {
-        int startIndex = item.indexOf("CPF: ") + 5;
-        int endIndex = item.length() - 1;
-        return item.substring(startIndex, endIndex);
+        String cpf = item.replaceAll("\\D", "");
+        return cpf;
+    }
+
+    private void handleSelection(String selectedValue) {
+        String cpf = extractCPF(selectedValue);
+
+        UsersDAO data = new UsersDAO(new ConnBD());
+        BankUsers user = data.getUserByCPF(cpf);
+
+        if (user != null) {
+            StringBuilder userData = new StringBuilder();
+            userData.append("<html>");
+            userData.append("Nome: ").append(user.getFullName()).append("<br/>");
+            userData.append("CPF: ").append(user.getCpf()).append("<br/>");
+            userData.append("</html>");
+            userDataLabel.setText(userData.toString());
+
+            List<BankAccounts> accounts = user.getAccounts();
+
+            if (accounts != null && !accounts.isEmpty()) {
+                StringBuilder accountData = new StringBuilder();
+                accountData.append("<html>Contas:<br/>");
+                for (BankAccounts account : accounts) {
+                    accountData.append("Número: ").append(account.getNumber()).append("<br/>");
+                    accountData.append("Tipo: ").append(account.getType()).append("<br/>");
+                    accountData.append("Saldo: ").append(account.getBalance()).append("<br/><br/>");
+                }
+                accountData.append("</html>");
+                accountDataLabel.setText(accountData.toString());
+            } else {
+                accountDataLabel.setText("Não há contas associadas a este usuário.");
+            }
+        } else {
+            userDataLabel.setText("");
+            accountDataLabel.setText("");
+        }
     }
 }

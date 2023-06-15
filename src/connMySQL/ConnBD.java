@@ -30,7 +30,7 @@ public class ConnBD {
             try {
                 conn.close();
             } catch (SQLException exception) {
-                System.out.println("Erro ao fechar a conexão: " + exception.getMessage());
+               JOptionPane.showMessageDialog(null, "Erro ao fechar a conexão: " + exception.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

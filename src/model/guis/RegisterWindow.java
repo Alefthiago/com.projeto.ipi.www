@@ -12,9 +12,13 @@ import javax.swing.JTextField;
 
 import connMySQL.ConnBD;
 import dao.UsersDAO;
-//import model.clients.BankUsers;
 import model.clients.BankUsers;
-import model.customException.ExistingCPFException;
+import model.customException.DifferentPasswordsE;
+import model.customException.EmptyFieldsE;
+import model.customException.ExistingCpfE;
+import model.customException.InvalidCpfTypeE;
+import model.customException.InvalidFullNameE;
+import model.customException.ShortCpfE;
 
 public class RegisterWindow extends JFrame {
 
@@ -98,45 +102,49 @@ public class RegisterWindow extends JFrame {
         String userCpf = inputCpf.getText();
         String userFirstName = inputFirstName.getText().toLowerCase().trim();
         String userLastName = inputLastName.getText().toLowerCase().trim();
-
-        if (userFirstName.isEmpty() || userLastName.isEmpty() || userCpf.isEmpty() || password1.length == 0 || password2.length == 0) {
-            JOptionPane.showMessageDialog(null, "Todos os campos devem ser preenchidos!", "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
-        } else {
-            boolean passwordsMatch = Arrays.equals(password1, password2);
-            if (!passwordsMatch) {
-                JOptionPane.showMessageDialog(null, "As senhas precisam ser iguais!", "Erro", JOptionPane.ERROR_MESSAGE);
+        try {
+            if (userFirstName.isEmpty() || userLastName.isEmpty() || userCpf.isEmpty() || password1.length == 0
+                    || password2.length == 0) {
+                throw new EmptyFieldsE();
             } else {
-                if (!userFirstName.matches("[a-zA-Z ]+") || !userLastName.matches("[a-zA-Z ]+"))
-                {
-                    JOptionPane.showMessageDialog(null, "Nome e sobrenome devem conter apenas letras!", "Erro", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (!userCpf.matches("\\d+")) {
-                    JOptionPane.showMessageDialog(null, "CPF deve conter apenas números!", "Erro", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (userCpf.length() != 11) {
-                    JOptionPane.showMessageDialog(null, "CPF deve conter 11 digitos!", "Erro", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                UsersDAO data = new UsersDAO(new ConnBD());
-                try {
+                boolean passwordsMatch = Arrays.equals(password1, password2);
+                if (!passwordsMatch) {
+                    throw new DifferentPasswordsE();
+                } else {
+                    if (!userFirstName.matches("[a-zA-Z ]+") || !userLastName.matches("[a-zA-Z ]+")) {
+                        throw new InvalidFullNameE();
+                    }
+                    if (!userCpf.matches("\\d+")) {
+                        throw new InvalidCpfTypeE();
+                    }
+                    if (userCpf.length() != 11) {
+                        throw new ShortCpfE();
+                    }
+                    UsersDAO data = new UsersDAO(new ConnBD());
                     if (!data.checkCpf(userCpf)) {
                         return;
                     } else {
-                    String userFullName = userFirstName + " " + userLastName;
-                    String userPass = new String(password1);
-                    BankUsers client = new BankUsers(userCpf, userFullName, userPass);
-                    data.addUser(client);
-                    dispose();
-                    new AccountWindow(client);
+                        String userFullName = userFirstName + " " + userLastName;
+                        String userPass = new String(password1);
+                        BankUsers client = new BankUsers(userCpf, userFullName, userPass);
+                        data.addUser(client);
+                        dispose();
+                        new AccountWindow(client);
                     }
-                } catch (ExistingCPFException exception) {
-                    JOptionPane.showMessageDialog(null,exception.getMessage(), "Erro" , JOptionPane.ERROR_MESSAGE);
-                    
                 }
             }
+        } catch (ExistingCpfE exception) {
+            JOptionPane.showMessageDialog(null, exception.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        } catch (EmptyFieldsE exception) {
+            exception.alert();
+        } catch (ShortCpfE exception) {
+            exception.alert();
+        } catch (InvalidCpfTypeE exception) {
+            exception.alert();
+        } catch (InvalidFullNameE exception) {
+            exception.alert();
+        } catch (DifferentPasswordsE exception) {
+            exception.alert();
         }
     }
 

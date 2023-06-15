@@ -53,25 +53,23 @@ public class CreateAccountWindow extends JFrame {
         setVisible(true);
     }
 
-    public void back(ActionEvent e) {
+    public void back(ActionEvent event) {
         dispose();
         new AccountWindow(this.user);
     }
 
-    public void addAccountSavings(ActionEvent e) {
+    public void addAccountSavings(ActionEvent event) {
         BankSavingsAccount newAccount = new BankSavingsAccount(this.user.getCpf(), "poupança");
         this.user.addAccount(newAccount);
         this.user.loadAccounts();
-        System.out.println(this.user.getAccounts());
         new AccountWindow(this.user);
         dispose();
     }
 
-    public void addAccountChecking(ActionEvent e) {
+    public void addAccountChecking(ActionEvent event) {
         BankCheckingAccount newAccount = new BankCheckingAccount(this.user.getCpf(), "corrente");
         this.user.addAccount(newAccount);
         this.user.loadAccounts();
-        System.out.println(this.user.getAccounts());
         new AccountWindow(this.user);
         dispose();
     }
